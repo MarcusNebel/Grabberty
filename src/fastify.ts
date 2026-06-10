@@ -11,7 +11,7 @@ console.log('Starting Fastify init')
 
 const meta = MetaZ.parse(meta_raw)
 
-if(meta.is_dev) {
+if (meta.is_dev) {
     console.log('Setting up CORS rules for dev')
 }
 

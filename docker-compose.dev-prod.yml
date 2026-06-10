@@ -1,0 +1,31 @@
+---
+services:
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+
+  grabberty-backend-dev-prod:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev-prod
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports: 
+      - 3000:3000
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://0.0.0.0:3000/api/ping >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./logs:/app/logs

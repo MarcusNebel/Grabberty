@@ -1,5 +1,6 @@
-import fastify from './src/fastify'
-import './src/routes/api/getPing'
+import fastify from './fastify'
+import './routes/api/getApiGetMetadata'
+import './routes/getApiPing'
 
 console.log('Starting Grabberty')
 
