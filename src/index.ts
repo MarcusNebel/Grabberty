@@ -1,6 +1,7 @@
 import fastify from './fastify'
 import './routes/getApiPing'
 import './routes/api/getGetMetadata'
+import './routes/api/getDownloadMedia'
 
 console.log('Starting Grabberty')
 

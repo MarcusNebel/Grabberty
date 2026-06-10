@@ -3,8 +3,7 @@ import { getMetadata } from '../../functions/getMetadata'
 
 fastify.get('/api/get-metadata', async (request, reply) => {
     const rawYoutubeId =
-        request.headers['youtubeid'] ??
-        request.headers['youtube-id']
+        request.headers['youtubeid'] ?? request.headers['youtube-id']
 
     const youtubeId = Array.isArray(rawYoutubeId)
         ? rawYoutubeId[0]

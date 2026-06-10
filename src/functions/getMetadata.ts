@@ -1,89 +1,86 @@
 import { spawn } from 'child_process'
 
 interface YoutubeMetadata {
-    id: string;
-    title: string;
-    description?: string;
+    id: string
+    title: string
+    description?: string
 
-    uploader?: string;
-    uploader_id?: string;
-    channel?: string;
-    channel_id?: string;
+    uploader?: string
+    uploader_id?: string
+    channel?: string
+    channel_id?: string
 
-    duration?: number;
-    view_count?: number;
-    like_count?: number;
+    duration?: number
+    view_count?: number
+    like_count?: number
 
-    upload_date?: string;
-    timestamp?: number;
+    upload_date?: string
+    timestamp?: number
 
-    webpage_url: string;
+    webpage_url: string
 
-    thumbnail?: string;
+    thumbnail?: string
 
-    videoFormats: VideoFormat[];
-    audioFormats: AudioFormat[];
+    videoFormats: VideoFormat[]
+    audioFormats: AudioFormat[]
 }
 
 interface Thumbnail {
-    url: string;
-    width?: number;
-    height?: number;
+    url: string
+    width?: number
+    height?: number
 }
 
 interface VideoFormat {
-    format_id: string;
+    format_id: string
 
-    ext: string;
+    ext: string
 
-    width?: number;
-    height?: number;
+    width?: number
+    height?: number
 
-    resolution?: string;
+    resolution?: string
 
-    fps?: number;
+    fps?: number
 
-    vcodec?: string;
+    vcodec?: string
 
-    filesize?: number;
-    filesize_approx?: number;
+    filesize?: number
+    filesize_approx?: number
 
-    bitrate?: number;
+    bitrate?: number
 
-    url?: string;
+    url?: string
 }
 
 interface AudioFormat {
-    format_id: string;
+    format_id: string
 
-    ext: string;
+    ext: string
 
-    acodec?: string;
+    acodec?: string
 
-    abr?: number;
-    asr?: number;
+    abr?: number
+    asr?: number
 
-    filesize?: number;
-    filesize_approx?: number;
+    filesize?: number
+    filesize_approx?: number
 
-    audioQuality?: string;
+    audioQuality?: string
 
-    url?: string;
+    url?: string
 }
 
-export function getMetadata(youtubeId:string): Promise<YoutubeMetadata> {
+export function getMetadata(youtubeId: string): Promise<YoutubeMetadata> {
     return new Promise((resolve, reject) => {
         console.log(`Accepted youtubeId: ${youtubeId}`)
 
-        if(!youtubeId) {
+        if (!youtubeId) {
             reject(new Error('No YouTube ID provided'))
             process.exit(1)
         }
 
-        const args = [
-            '--dump-single-json',
-            youtubeId
-        ]
+        const args = ['--dump-single-json', youtubeId]
 
         const yt = spawn('yt-dlp', args)
 
@@ -99,7 +96,7 @@ export function getMetadata(youtubeId:string): Promise<YoutubeMetadata> {
         })
 
         yt.on('close', (code) => {
-            if(code !== 0) {
+            if (code !== 0) {
                 reject(new Error(`yt-dlp error: ${errorData}`))
                 return
             }
@@ -110,7 +107,12 @@ export function getMetadata(youtubeId:string): Promise<YoutubeMetadata> {
                 const formats = json.formats ?? []
 
                 const videoFormats: VideoFormat[] = formats
-                    .filter((f: any) => f.vcodec && f.vcodec !== 'none' && f.acodec == 'none')
+                    .filter(
+                        (f: any) =>
+                            f.vcodec &&
+                            f.vcodec !== 'none' &&
+                            f.acodec == 'none'
+                    )
                     .map((f: any) => ({
                         format_id: f.format_id,
                         ext: f.ext,
@@ -126,7 +128,12 @@ export function getMetadata(youtubeId:string): Promise<YoutubeMetadata> {
                     }))
 
                 const audioFormats: AudioFormat[] = formats
-                    .filter((f: any) => f.acodec && f.acodec !== 'none' && f.vcodec === 'none')
+                    .filter(
+                        (f: any) =>
+                            f.acodec &&
+                            f.acodec !== 'none' &&
+                            f.vcodec === 'none'
+                    )
                     .map((f: any) => ({
                         format_id: f.format_id,
                         ext: f.ext,
