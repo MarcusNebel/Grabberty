@@ -5,13 +5,28 @@
   "author": "Marcus Nebel",
   "type": "module",
   "private": true,
+  "scripts": {
+    "run": "bun run src/index.ts",
+    "dev": "docker compose -f docker-compose.dev.yml up -d --build | docker compose -f docker-compose.dev.yml down",
+    "dev-prod": "docker compose -f docker-compose.dev-prod.yml up -d --build | docker compose -f docker-compose.dev-prod.yml down",
+    "prettier": "bunx prettier src/ --write",
+    "ci:ts-check": "bun x tsc --noEmit",
+    "dev:add-route": "bun run scripts/dev/add-route.ts && bun run prettier"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/fs-extra": "^11.0.4"
   },
   "peerDependencies": {
     "typescript": "^6.0.2"
   },
   "dependencies": {
-    "fastify": "^5.8.5"
+    "@fastify/cors": "^11.2.0",
+    "@fastify/rate-limit": "^11.0.0",
+    "chalk": "^5.6.2",
+    "fastify": "^5.8.5",
+    "fs-extra": "^11.3.5",
+    "inquirer": "^14.0.2",
+    "zod": "^4.4.3"
   }
 }

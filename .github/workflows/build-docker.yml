@@ -1,0 +1,42 @@
+name: Publish Docker Image
+
+on:
+  push:
+    branches:
+      - backend
+      - backend-dev
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login GHCR
+        if: github.ref_name == 'backend'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: Build (backend-dev)
+        if: github.ref_name == 'backend-dev'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+
+      - name: Build & Push (backend)
+        if: github.ref_name == 'backend'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/jimce-music/jimce-webclient:latest
+            ghcr.io/jimce-music/jimce-webclient:${{ github.sha }}
