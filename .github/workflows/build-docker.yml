@@ -38,5 +38,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/MarcusNebel/grabberty-backend:latest
-            ghcr.io/MarcusNebel/grabberty-backend:${{ github.sha }}
+            ghcr.io/marcusnebel/grabberty-backend:latest
+            ghcr.io/marcusnebel/grabberty-backend:${{ github.sha }}
