@@ -1,0 +1,17 @@
+{
+  "name": "grabberty",
+  "module": "index.ts",
+  "version": "0.0.0",
+  "author": "Marcus Nebel",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "fastify": "^5.8.5"
+  }
+}
