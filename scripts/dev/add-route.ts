@@ -9,7 +9,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = path.join(SCRIPT_DIR, '..', '..')
 const SRC_PATH = path.join(PROJECT_ROOT, 'src')
 const ROUTES_PATH = path.join(SRC_PATH, 'routes')
-const INDEX_PATH = path.join(PROJECT_ROOT, 'index.ts')
+const INDEX_PATH = path.join(PROJECT_ROOT, 'src', 'index.ts')
 
 console.log(chalk.blue('This script will create a new route.'))
 
