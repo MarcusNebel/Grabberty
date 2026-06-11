@@ -1,0 +1,13 @@
+# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file! Do not edit.
+
+.youtube.com	TRUE	/	TRUE	1787429357	PREF	f6=40000000&tz=Europe.Berlin&f5=20000&f7=100&repeat=NONE&autoplay=true
+.youtube.com	TRUE	/	TRUE	1787429356	SOCS	CAISEwgDEgk4NzIxMzkzNzMaAmRlIAEaBgiAse7MBg
+.youtube.com	TRUE	/	TRUE	1787429356	VISITOR_INFO1_LIVE	LXDMea1Emdo
+.youtube.com	TRUE	/	TRUE	1771879156	GPS	1
+.youtube.com	TRUE	/	TRUE	0	YSC	H5zCM6Ipluw
+.youtube.com	TRUE	/	TRUE	1787406959	__Secure-ROLLOUT_TOKEN	CKOHlqGz1a6fBRCS9e-qyoaQAxiJsfK_7--SAw%3D%3D
+.youtube.com	TRUE	/	TRUE	1787429359	VISITOR_INFO1_LIVE	SV9mQ9klpJc
+.youtube.com	TRUE	/	TRUE	1787429359	VISITOR_PRIVACY_METADATA	CgJERRIEEgAgPw%3D%3D
+.youtube.com	TRUE	/	TRUE	1787429355	__Secure-YNID	16.YT=oyHC0OzzPk6PxJJCrjy8LX90mABKP7DJVE7SBt4OTpWNPmKTUe4wnLl4aH7Z6554fxHnDmOF2pzR5pJBSwMVWT0ui50k-omQg1dfrYwptUUBf6b4b5IpXVTTeORMrfU7-BziWb8p4E6Z4zbmlgwLZN-yP5JeDx0BkYYK5Whpglc0o6v4vdJuLuBQIyvFwwk8TlN4CmYbeXSjda5UhCERfgONyZEkKrEk9QGo0G9EP5cODlgEx_yo2nLjNCjDI1ojicmbJdE18II4D7p2O8htoz-bfVzgSA6wfkAD2g7TRAtWxQwvneTq7WoVIcryq4GcLcwqpVAQftFC_rWhOn9PJg

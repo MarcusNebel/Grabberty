@@ -33,6 +33,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', `${videoId}+${audioId}`, 
                 '--merge-output-format', 'mp4', 
                 youtubeId, 
+                '--cookies',
+                'cookies.txt',
                 '-o', path.join(tmpDir, `${youtubeId}.%(ext)s`) // <--- Hier .%(ext)s nutzen
             ]
         } else if (videoId !== "0" && audioId === "0") {
@@ -42,6 +44,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', videoId, 
                 '--merge-output-format', 'mp4', 
                 youtubeId, 
+                '--cookies',
+                'cookies.txt', 
                 '-o', path.join(tmpDir, `video-only-${youtubeId}.%(ext)s`)
             ]
         } else if (videoId === "0" && audioId !== "0") {
@@ -52,6 +56,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-x', 
                 '--audio-format', 'mp3', 
                 youtubeId, 
+                '--cookies',
+                'cookies.txt',
                 '-o', path.join(tmpDir, `audio-only-${youtubeId}.%(ext)s`)
             ]
         } else {
