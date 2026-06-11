@@ -25,12 +25,6 @@ interface YoutubeMetadata {
     audioFormats: AudioFormat[]
 }
 
-interface Thumbnail {
-    url: string
-    width?: number
-    height?: number
-}
-
 interface VideoFormat {
     format_id: string
 
@@ -77,7 +71,6 @@ export function getMetadata(youtubeId: string): Promise<YoutubeMetadata> {
 
         if (!youtubeId) {
             reject(new Error('No YouTube ID provided'))
-            process.exit(1)
         }
 
         const args = ['--dump-single-json', youtubeId]
@@ -173,7 +166,6 @@ export function getMetadata(youtubeId: string): Promise<YoutubeMetadata> {
                 }
 
                 console.log(`Metadata fetched for: ${youtubeId}`)
-                console.log(metadata)
                 resolve(metadata)
             } catch (e) {
                 reject(new Error('Could not parse JSON'))
