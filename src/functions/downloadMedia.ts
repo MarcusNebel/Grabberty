@@ -33,6 +33,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', `${videoId}+${audioId}`, 
                 '--merge-output-format', 'mp4', 
                 youtubeId, 
+                '--cookies',
+                'cookies.txt',
                 '-o', path.join(tmpDir, `${youtubeId}.%(ext)s`) // <--- Hier .%(ext)s nutzen
             ]
         } else if (videoId !== "0" && audioId === "0") {
@@ -42,6 +44,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', videoId, 
                 '--merge-output-format', 'mp4', 
                 youtubeId, 
+                '--cookies',
+                'cookies.txt', 
                 '-o', path.join(tmpDir, `video-only-${youtubeId}.%(ext)s`)
             ]
         } else if (videoId === "0" && audioId !== "0") {
@@ -52,6 +56,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-x', 
                 '--audio-format', 'mp3', 
                 youtubeId, 
+                '--cookies',
+                'cookies.txt',
                 '-o', path.join(tmpDir, `audio-only-${youtubeId}.%(ext)s`)
             ]
         } else {
@@ -60,16 +66,32 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
 
         // 2. Prozess starten mit den dynamisch gesetzten Argumenten
         const yt = spawn('yt-dlp', finalArgs)
+        
+        let stderrOutput = ''
+        let stdoutOutput = ''
+
+        // Fehler-Output erfassen
+        yt.stderr?.on('data', (data) => {
+            stderrOutput += data.toString()
+            console.error('[yt-dlp stderr]', data.toString())
+        })
+        
+        // Standard-Output erfassen
+        yt.stdout?.on('data', (data) => {
+            stdoutOutput += data.toString()
+            console.log('[yt-dlp stdout]', data.toString())
+        })
 
         // Fehler abfangen, falls z.B. yt-dlp nicht gefunden wird
         yt.on('error', (err) => {
-            reject(err)
+            reject(new Error(`Failed to spawn yt-dlp: ${err.message}`))
         })
 
         // 3. Warten, bis der Download komplett abgeschlossen ist
         yt.on('close', (code) => {
             if (code !== 0) {
-                return reject(new Error(`yt-dlp exited with code ${code}`))
+                const errorMsg = stderrOutput || stdoutOutput || 'No error message from yt-dlp'
+                return reject(new Error(`yt-dlp exited with code ${code}: ${errorMsg}`))
             }
 
             const fullPath = path.join(tmpDir, filename)
