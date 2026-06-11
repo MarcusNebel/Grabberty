@@ -16,8 +16,10 @@
     "clean": "rimraf node_modules dist"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "tailwindcss": "^4.3.0",
     "vite-plugin-svgr": "^5.2.0"
   },
   "devDependencies": {
