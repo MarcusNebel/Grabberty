@@ -1,11 +1,12 @@
 import fastify from './fastify'
-import './routes/api/getApiGetMetadata'
 import './routes/getApiPing'
+import './routes/api/getGetMetadata'
+import './routes/api/getDownloadMedia'
 
 console.log('Starting Grabberty')
 
 fastify.listen({ port: 3000, host: '0.0.0.0' }, function (err, address) {
-    if(err) {
+    if (err) {
         fastify.log.error(err)
         process.exit(1)
     }

@@ -1,9 +1,7 @@
 ---
 services:
-  grabberty-backend-dev:
-    build: 
-      context: .
-      dockerfile: Dockerfile.dev
+  grabberty-backend:
+    image: ghcr.io/marcusnebel/grabberty-backend:latest
     restart: unless-stopped
     depends_on:
       redis:
