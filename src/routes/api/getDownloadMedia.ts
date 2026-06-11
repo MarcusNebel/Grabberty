@@ -18,8 +18,6 @@ fastify.get('/api/download-media', async (request, reply) => {
         ? rawYoutubeId[0]
         : rawYoutubeId
 
-    console.log(`Audio: ${rawAudioId} \nVideo: ${rawVideoId}`)
-
     if(!audioId || !videoId || !youtubeId) {
         reply.code(400).send({
             success: false,
@@ -34,6 +32,7 @@ fastify.get('/api/download-media', async (request, reply) => {
         reply.header('Content-Disposition', `attachment; filename="${filename}"`)
         reply.header('Content-Type', mimeType)
 
+        console.log(`Download finished for ${youtubeId}`)
         return reply.send(stream)
     } catch (error: any) {
         console.error('Error by media download:', error)

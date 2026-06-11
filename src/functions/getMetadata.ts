@@ -67,8 +67,6 @@ interface AudioFormat {
 
 export function getMetadata(youtubeId: string): Promise<YoutubeMetadata> {
     return new Promise((resolve, reject) => {
-        console.log(`Accepted youtubeId: ${youtubeId}`)
-
         if (!youtubeId) {
             reject(new Error('No YouTube ID provided'))
         }

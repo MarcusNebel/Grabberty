@@ -11,8 +11,6 @@ export interface DownloadMedia {
 
 export function downloadMedia(videoId: string, audioId: string, youtubeId: string): Promise<DownloadMedia> {
     return new Promise((resolve, reject) => {
-        console.log(`Accepted youtubeId: ${youtubeId} \nAccepted videoId: ${videoId} \nAccepted audioId: ${audioId}`)
-
         if (!youtubeId || !videoId || !audioId) {
             return reject(new Error('No YouTube ID, Video ID or Audio ID provided'))
         }
