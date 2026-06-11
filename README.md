@@ -9,8 +9,8 @@ Grabberty ist eine moderne, selbstgehostete Webanwendung, mit der du YouTube-Vid
 
 Das Projekt ist in eine Microservice-Architektur aufgeteilt, um maximale Performance und Trennung von Zuständigkeiten zu gewährleisten:
 
-* **Frontend:** Eine reaktive Benutzeroberfläche, entwickelt mit **Svelte / SvelteKit** und **TypeScript**, gestylt mit **Tailwind CSS**.
-* **Backend:** Eine performante REST-API, gebaut mit **Node.js** und **Express** (TypeScript). Für die Kernfunktionalität der Downloads greift das Backend auf optimierte Bibliotheken wie `ytdl-core` oder native CLI-Tools zurück.
+* **Frontend:** Eine reaktive Benutzeroberfläche, entwickelt mit **React / Vite** und **TypeScript**, gestylt mit **Tailwind CSS**.
+* **Backend:** Eine performante Fastify-API, gebaut mit **TypeScript**. Für die Kernfunktionalität der Downloads greift das Backend auf optimierte Bibliotheken wie `yt-dlp` zurück.
 * **Reverse Proxy:** Ein **Nginx**-Container fungiert als zentraler Einstiegspunkt. Er leitet API-Anfragen (`/api/*`) an das Backend und alle regulären Seitenaufrufe an das Frontend weiter, sodass die Anwendung sicher über einen einzigen Port erreichbar ist.
 
 ---
