@@ -5,40 +5,27 @@ function App() {
   const [format, setFormat] = useState("1080p")
 
   return (
-    <div className="w-full h-screen bg-[#232836] flex items-center justify-center">
+    <div className="w-full h-screen bg-[#0E0E0F] flex items-center justify-center">
 
       <div className="flex flex-col items-center gap-4">
 
-        <h1 className="text-white text-3xl font-bold">
-          Grabberty
-        </h1>
         
-        <div className="w-[700px] h-[80px] bg-zinc-600 p-4 rounded-full border-[2px] border-zinc-800 flex items-center">
+        <div className="w-[700px] bg-[#1B1B1D] p-4 rounded-[30px] border-[2px] border-zinc-800 flex items-center gap-4">
 
-          <input
-          className="flex-1 bg-transparent text-white outline-none px-2"
-          placeholder="Enter URL..."
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          />
-          
-          <select
-            className="hover:bg-zinc-700 text-white px-3 py-2 rounded-full outline-none cursor-pointer"
-            value={format}
-            onChange={(e) => setFormat(e.target.value)}
-          >
-            <option value="4k">4K</option>
-            <option value="1080p">1080p</option>
-            <option value="720p">720p</option>
-            <option value="480p">480p</option>
-            <option value="mp3">MP3</option>
-          </select>
+          <div className="flex-1 h-[50px] bg-[#242427] rounded-[15px] flex items-center">
+            <input
+              className="flex-1 bg-transparent text-white outline-none px-3"
+              placeholder="Enter URL..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              />
+          </div>
+
+            <button className="w-[160px] h-[50px] bg-[#E53925] rounded-[10px] text-white font-bold hover:bg-[#b82f1f] transition">
+                Next
+              </button>
 
         </div>
-
-        <button className="bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition">
-          Download
-        </button>
 
       </div>
 
