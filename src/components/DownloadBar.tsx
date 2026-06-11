@@ -3,7 +3,6 @@ import icon from "../assets/Grabberty_Logo.svg"
 
 function App() {
   const [url, setUrl] = useState("")
-  const [format, setFormat] = useState("1080p")
 
   return (
     <div className="w-full h-screen bg-[#0E0E0F] flex items-center justify-center">
