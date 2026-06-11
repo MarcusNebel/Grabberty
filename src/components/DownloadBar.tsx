@@ -4,11 +4,11 @@ import type {
   BackendAudioFormat,
   BackendMetadata,
   BackendVideoFormat,
-} from "../utils/download"
+} from "../utils/types"
 import {
-  downloadMediaFile,
   extractYoutubeId,
   fetchVideoMetadata,
+  downloadMediaFile,
 } from "../utils/download"
 
 type DropdownOption = {
@@ -52,31 +52,77 @@ const formatFileSize = (bytes?: number): string => {
   return `${kilobytes.toFixed(kilobytes >= 10 ? 0 : 1)} KB`
 }
 
-const buildVideoOptions = (formats: BackendVideoFormat[]): DropdownOption[] =>
-  [...formats]
-    .sort((left, right) => (right.height ?? 0) - (left.height ?? 0))
-    .map((format) => {
-      const qualityLabel = format.height ? `${format.height}p` : format.resolution ?? format.format_id
-      const sizeLabel = format.filesize ?? format.filesize_approx ? ` · ${formatFileSize(format.filesize ?? format.filesize_approx)}` : ""
+const buildVideoOptions = (formats: BackendVideoFormat[]): DropdownOption[] => {
+  const seen = new Set<string>()
+  
+  const options: DropdownOption[] = [
+    {
+      label: "Skip Video",
+      value: "0",
+    },
+  ]
 
-      return {
-        label: `${qualityLabel} · ${format.ext}${sizeLabel}`,
-        value: format.format_id,
-      }
-    })
+  options.push(
+    ...[...formats]
+      .sort((left, right) => (right.height ?? 0) - (left.height ?? 0))
+      .filter((format) => {
+        const qualityLabel = format.height ? `${format.height}p` : format.resolution ?? "unknown"
+        
+        if (seen.has(qualityLabel)) {
+          return false
+        }
+        
+        seen.add(qualityLabel)
+        return true
+      })
+      .map((format) => {
+        const qualityLabel = format.height ? `${format.height}p` : format.resolution ?? "unknown"
 
-const buildAudioOptions = (formats: BackendAudioFormat[]): DropdownOption[] =>
-  [...formats]
-    .sort((left, right) => (right.abr ?? 0) - (left.abr ?? 0))
-    .map((format) => {
-      const bitrateLabel = format.abr ? `${format.abr}kbps` : format.format_id
-      const sizeLabel = format.filesize ?? format.filesize_approx ? ` · ${formatFileSize(format.filesize ?? format.filesize_approx)}` : ""
+        return {
+          label: qualityLabel,
+          value: format.format_id,
+        }
+      })
+  )
 
-      return {
-        label: `${bitrateLabel} · ${format.ext}${sizeLabel}`,
-        value: format.format_id,
-      }
-    })
+  return options
+}
+
+const buildAudioOptions = (formats: BackendAudioFormat[]): DropdownOption[] => {
+  const seen = new Set<string>()
+  
+  const options: DropdownOption[] = [
+    {
+      label: "Skip Audio",
+      value: "0",
+    },
+  ]
+
+  options.push(
+    ...[...formats]
+      .sort((left, right) => (right.abr ?? 0) - (left.abr ?? 0))
+      .filter((format) => {
+        const sampleRateLabel = format.asr ? `${format.asr}Hz` : "unknown"
+        
+        if (seen.has(sampleRateLabel)) {
+          return false
+        }
+        
+        seen.add(sampleRateLabel)
+        return true
+      })
+      .map((format) => {
+        const sampleRateLabel = format.asr ? `${format.asr}Hz` : "unknown"
+
+        return {
+          label: sampleRateLabel,
+          value: format.format_id,
+        }
+      })
+  )
+
+  return options
+}
 
 const buildVideoInfo = (metadata: BackendMetadata): VideoInfo => ({
   title: metadata.title,
@@ -196,6 +242,7 @@ function DownloadBar() {
   const [audioOptions, setAudioOptions] = useState<DropdownOption[]>([])
   const [selectedQuality, setSelectedQuality] = useState("")
   const [selectedAudio, setSelectedAudio] = useState("")
+  const [savedYoutubeId, setSavedYoutubeId] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
 
   useEffect(() => {
@@ -210,12 +257,14 @@ function DownloadBar() {
 
   const handleNext = async () => {
     const youtubeId = extractYoutubeId(url)
+    console.log(`Extracted YoutubeId: ${youtubeId}`)
 
     if (!youtubeId) {
       setErrorMessage("Bitte einen gültigen YouTube-Link eingeben.")
       return
     }
 
+    setSavedYoutubeId(youtubeId)
     setErrorMessage("")
     setIsExpanded(true)
     setIsLoading(true)
@@ -248,9 +297,7 @@ function DownloadBar() {
   }
 
   const handleDownload = async () => {
-    const youtubeId = extractYoutubeId(url)
-
-    if (!youtubeId) {
+    if (!savedYoutubeId) {
       setErrorMessage("Bitte einen gültigen YouTube-Link eingeben.")
       return
     }
@@ -259,7 +306,7 @@ function DownloadBar() {
     setIsLoading(true)
 
     try {
-      await downloadMediaFile(youtubeId, selectedQuality, selectedAudio)
+      await downloadMediaFile(savedYoutubeId, selectedQuality, selectedAudio)
     } catch (error) {
       const message = error instanceof Error ? error.message : "Download failed"
       setErrorMessage(message)
@@ -315,7 +362,7 @@ function DownloadBar() {
         </div>
 
         <div
-          className={`card-expand w-full overflow-hidden rounded-[30px] border border-[#555559] bg-[#1B1B1D] shadow-[0_20px_60px_rgba(0,0,0,0.38)] ${
+          className={`card-expand w-full rounded-[30px] border border-[#555559] bg-[#1B1B1D] shadow-[0_20px_60px_rgba(0,0,0,0.38)] ${
             !isExpanded && !isMounted ? "opacity-0" : ""
           } ${
             isExpanded ? "" : isMounted ? "bar-fade" : ""
@@ -323,7 +370,7 @@ function DownloadBar() {
             isExpanded ? "max-w-[900px]" : "max-w-[700px]"
           }`}
         >
-          <div className="p-5 sm:p-6">
+          <div className="p-5 sm:p-6 overflow-visible">
             <div className="flex items-center gap-3">
               <div className="flex min-w-0 flex-1 items-center rounded-[14px] border border-[#242427] bg-[#242427] px-4 h-[50px] transition-colors duration-300 focus-within:border-[#8E8E93] focus-within:bg-[#27272a]">
                 <span className="mr-3 flex h-5 w-5 flex-shrink-0 items-center justify-center text-[#8E8E93]">
@@ -368,7 +415,7 @@ function DownloadBar() {
               </div>
 
               <div
-                className={`overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                   isExpanded ? "max-w-[155px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
                 }`}
               >
@@ -382,7 +429,7 @@ function DownloadBar() {
               </div>
 
               <div
-                className={`overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                   isExpanded ? "max-w-[155px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
                 }`}
               >
