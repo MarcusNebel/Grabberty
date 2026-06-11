@@ -3,9 +3,6 @@ services:
   grabberty-backend:
     image: ghcr.io/marcusnebel/grabberty-backend:latest
     restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
     ports: 
       - 3000:3000
     healthcheck:
