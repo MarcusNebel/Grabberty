@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react"
 import icon from "../assets/Grabberty_Logo.svg"
-import { downloadMediaFile, extractYoutubeId } from "../utils/download"
+import type {
+  BackendAudioFormat,
+  BackendMetadata,
+  BackendVideoFormat,
+} from "../utils/download"
+import {
+  downloadMediaFile,
+  extractYoutubeId,
+  fetchVideoMetadata,
+} from "../utils/download"
 
 type DropdownOption = {
   label: string
@@ -14,30 +23,70 @@ type VideoInfo = {
   duration: string
   format: string
   fileSize: string
+  thumbnail?: string
 }
 
-const QUALITY_OPTIONS: DropdownOption[] = [
-  { label: "1080p (FHD)", value: "137" },
-  { label: "720p (HD)", value: "136" },
-  { label: "480p", value: "135" },
-  { label: "360p", value: "134" },
-]
+const formatDuration = (durationSeconds?: number): string => {
+  if (!durationSeconds || durationSeconds <= 0) {
+    return "--:--"
+  }
 
-const AUDIO_OPTIONS: DropdownOption[] = [
-  { label: "320kbps", value: "251" },
-  { label: "192kbps", value: "140" },
-  { label: "128kbps", value: "139" },
-  { label: "No Audio", value: "0" },
-]
+  const minutes = Math.floor(durationSeconds / 60)
+  const seconds = Math.floor(durationSeconds % 60)
 
-const MOCK_VIDEO_INFO: VideoInfo = {
-  title: "Rick Astley - Never Gonna Give You Up (Official Music Video)",
-  channel: "Rick Astley",
-  views: "1.4B views",
-  duration: "03:32",
-  format: "MP4",
-  fileSize: "15.4 MB",
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
 }
+
+const formatFileSize = (bytes?: number): string => {
+  if (!bytes || bytes <= 0) {
+    return "Size unavailable"
+  }
+
+  const megabytes = bytes / (1024 * 1024)
+
+  if (megabytes >= 1) {
+    return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`
+  }
+
+  const kilobytes = bytes / 1024
+  return `${kilobytes.toFixed(kilobytes >= 10 ? 0 : 1)} KB`
+}
+
+const buildVideoOptions = (formats: BackendVideoFormat[]): DropdownOption[] =>
+  [...formats]
+    .sort((left, right) => (right.height ?? 0) - (left.height ?? 0))
+    .map((format) => {
+      const qualityLabel = format.height ? `${format.height}p` : format.resolution ?? format.format_id
+      const sizeLabel = format.filesize ?? format.filesize_approx ? ` · ${formatFileSize(format.filesize ?? format.filesize_approx)}` : ""
+
+      return {
+        label: `${qualityLabel} · ${format.ext}${sizeLabel}`,
+        value: format.format_id,
+      }
+    })
+
+const buildAudioOptions = (formats: BackendAudioFormat[]): DropdownOption[] =>
+  [...formats]
+    .sort((left, right) => (right.abr ?? 0) - (left.abr ?? 0))
+    .map((format) => {
+      const bitrateLabel = format.abr ? `${format.abr}kbps` : format.format_id
+      const sizeLabel = format.filesize ?? format.filesize_approx ? ` · ${formatFileSize(format.filesize ?? format.filesize_approx)}` : ""
+
+      return {
+        label: `${bitrateLabel} · ${format.ext}${sizeLabel}`,
+        value: format.format_id,
+      }
+    })
+
+const buildVideoInfo = (metadata: BackendMetadata): VideoInfo => ({
+  title: metadata.title,
+  channel: metadata.channel ?? metadata.uploader ?? "Unknown channel",
+  views: metadata.view_count ? `${metadata.view_count.toLocaleString()} views` : "Views unavailable",
+  duration: formatDuration(metadata.duration),
+  format: metadata.videoFormats[0]?.ext?.toUpperCase() ?? "MP4",
+  fileSize: formatFileSize(metadata.videoFormats[0]?.filesize ?? metadata.videoFormats[0]?.filesize_approx),
+  thumbnail: metadata.thumbnail,
+})
 
 function DropdownChevron({ open }: { open: boolean }) {
   return (
@@ -63,11 +112,13 @@ function DropdownField({
   value,
   onChange,
   options,
+  disabled,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   options: DropdownOption[]
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -90,7 +141,8 @@ function DropdownField({
       <button
         type="button"
         onClick={() => setOpen((state) => !state)}
-        className="flex h-[50px] w-full items-center justify-between rounded-[14px] border border-[#555559] bg-[#242427] px-4 text-sm text-[#FFFFFF] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-300 hover:border-[#8E8E93] hover:bg-[#2a2a2d] focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+        disabled={disabled}
+        className="flex h-[50px] w-full items-center justify-between rounded-[14px] border border-[#555559] bg-[#242427] px-4 text-sm text-[#FFFFFF] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-300 hover:border-[#8E8E93] hover:bg-[#2a2a2d] focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="truncate text-left text-[#FFFFFF]">
           {currentOption ? currentOption.label : label}
@@ -140,10 +192,11 @@ function DownloadBar() {
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null)
-  const [selectedQuality, setSelectedQuality] = useState(QUALITY_OPTIONS[0].value)
-  const [selectedAudio, setSelectedAudio] = useState(AUDIO_OPTIONS[0].value)
+  const [qualityOptions, setQualityOptions] = useState<DropdownOption[]>([])
+  const [audioOptions, setAudioOptions] = useState<DropdownOption[]>([])
+  const [selectedQuality, setSelectedQuality] = useState("")
+  const [selectedAudio, setSelectedAudio] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
-  const infoTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -152,15 +205,14 @@ function DownloadBar() {
 
     return () => {
       window.cancelAnimationFrame(frameId)
-
-      if (infoTimerRef.current) {
-        window.clearTimeout(infoTimerRef.current)
-      }
     }
   }, [])
 
-  const handleNext = () => {
-    if (!url.trim()) {
+  const handleNext = async () => {
+    const youtubeId = extractYoutubeId(url)
+
+    if (!youtubeId) {
+      setErrorMessage("Bitte einen gültigen YouTube-Link eingeben.")
       return
     }
 
@@ -168,17 +220,31 @@ function DownloadBar() {
     setIsExpanded(true)
     setIsLoading(true)
     setVideoInfo(null)
-    setSelectedQuality(QUALITY_OPTIONS[0].value)
-    setSelectedAudio(AUDIO_OPTIONS[0].value)
 
-    if (infoTimerRef.current) {
-      window.clearTimeout(infoTimerRef.current)
-    }
+    try {
+      const metadata = await fetchVideoMetadata(youtubeId)
+      const nextQualityOptions = buildVideoOptions(metadata.videoFormats)
+      const nextAudioOptions = buildAudioOptions(metadata.audioFormats)
 
-    infoTimerRef.current = window.setTimeout(() => {
-      setVideoInfo(MOCK_VIDEO_INFO)
+      if (!nextQualityOptions.length || !nextAudioOptions.length) {
+        throw new Error("Keine passenden Video- oder Audioformate gefunden.")
+      }
+
+      setQualityOptions(nextQualityOptions)
+      setAudioOptions(nextAudioOptions)
+      setSelectedQuality(nextQualityOptions[0].value)
+      setSelectedAudio(nextAudioOptions[0].value)
+      setVideoInfo(buildVideoInfo(metadata))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Metadata loading failed"
+      setErrorMessage(message)
+      setQualityOptions([])
+      setAudioOptions([])
+      setSelectedQuality("")
+      setSelectedAudio("")
+    } finally {
       setIsLoading(false)
-    }, 260)
+    }
   }
 
   const handleDownload = async () => {
@@ -290,9 +356,9 @@ function DownloadBar() {
                     if (event.key === "Enter") {
                       event.preventDefault()
                       if (isExpanded) {
-                        void handleDownload()
+                          void handleDownload()
                       } else {
-                        handleNext()
+                          void handleNext()
                       }
                     }
                   }}
@@ -310,7 +376,8 @@ function DownloadBar() {
                   label="Quality"
                   value={selectedQuality}
                   onChange={setSelectedQuality}
-                  options={QUALITY_OPTIONS}
+                  options={qualityOptions}
+                  disabled={isLoading || !qualityOptions.length}
                 />
               </div>
 
@@ -323,7 +390,8 @@ function DownloadBar() {
                   label="Audio"
                   value={selectedAudio}
                   onChange={setSelectedAudio}
-                  options={AUDIO_OPTIONS}
+                  options={audioOptions}
+                  disabled={isLoading || !audioOptions.length}
                 />
               </div>
 
@@ -370,8 +438,16 @@ function DownloadBar() {
                 <div className="rounded-[18px] border border-[#242427] bg-[#242427] p-4">
                   <div className="flex flex-col gap-4 lg:flex-row">
                     <div className="relative h-[122px] w-full overflow-hidden rounded-[14px] bg-gradient-to-br from-[#1D1E31] via-[#17172A] to-[#111114] lg:w-[220px] lg:flex-shrink-0">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(229,57,37,0.18),transparent_55%)]" />
-                      <div className="absolute inset-0 flex items-center justify-center">
+                      {videoInfo.thumbnail ? (
+                        <img
+                          src={videoInfo.thumbnail}
+                          alt={videoInfo.title}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(229,57,37,0.18),transparent_55%)]" />
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                         <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/8 text-[#FFFFFF]">
                           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
                             <path d="M8 5v14l11-7-11-7Z" fill="currentColor" />
