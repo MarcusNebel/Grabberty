@@ -3,7 +3,7 @@ FROM oven/bun:alpine
 WORKDIR /app
 
 RUN apk update && apk upgrade
-RUN apk add --no-cache python3 py3-pip && ln -sf /usr/bin/python3 /usr/bin/python
+RUN apk add --no-cache python3 py3-pip ffmpeg && ln -sf /usr/bin/python3 /usr/bin/python
 
 COPY ./src ./src
 COPY meta-prod.yml meta.yml
