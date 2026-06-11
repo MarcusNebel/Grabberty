@@ -1,7 +1,21 @@
 import type { BackendMetadata } from "./types"
 
+const getBackendUrl = () => {
+  const hostname = window.location.hostname
+  const port = window.location.port
+  
+  // Prüfe ob es eine IP-Adresse ist (IPv4)
+  const isIP = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)
+  
+  if (isIP) {
+    return `http://${hostname}:${port}`
+  } else {
+    return `http://${hostname}`
+  }
+}
+
 export const fetchVideoMetadata = async (youtubeId: string): Promise<BackendMetadata> => {
-  const response = await fetch(`http://192.168.188.27:3000/api/get-metadata`, {
+  const response = await fetch(`${getBackendUrl()}/api/get-metadata`, {
     method: "GET",
     headers: {
       youtubeid: youtubeId,
@@ -30,7 +44,7 @@ export const downloadMediaFile = async (youtubeId: string, videoId: string, audi
     console.log(`AUDIOID: ${audioId}`)
 
   try {
-    const response = await fetch('http://192.168.188.27:3000/api/download-media', {
+    const response = await fetch(`${getBackendUrl()}/api/download-media`, {
       method: 'GET',
       headers: {
         'youtubeid': youtubeId,
