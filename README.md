@@ -28,8 +28,8 @@ Erstelle einen neuen Ordner auf deinem Server und lade die beiden benötigten Ko
 *Tipp: Du kannst die Dateien direkt über dein Terminal mit `curl` oder `wget` beziehen:*
 ```bash
 mkdir grabberty && cd grabberty
-curl -O [https://raw.githubusercontent.com/marcusnebel/grabberty/main/docker-compose.yml](https://raw.githubusercontent.com/marcusnebel/grabberty/main/docker-compose.yml)
-curl -O [https://raw.githubusercontent.com/marcusnebel/grabberty/main/nginx.conf](https://raw.githubusercontent.com/marcusnebel/grabberty/main/nginx.conf)
+curl -O https://raw.githubusercontent.com/marcusnebel/grabberty/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/marcusnebel/grabberty/main/nginx.conf
 
 ```
 
