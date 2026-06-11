@@ -1,0 +1,29 @@
+services:
+  frontend:
+    image: ghcr.io/marcusnebel/grabberty-frontend:latest
+    restart: unless-stopped
+    # Ports hier entfernt, läuft intern auf Port 3000
+
+  backend:
+    image: ghcr.io/marcusnebel/grabberty-backend:latest
+    restart: unless-stopped
+    # Ports hier entfernt, läuft intern auf Port 3000
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://0.0.0.0:3000/api/ping >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./logs:/app/logs
+
+  proxy:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "6767:80" # Hier kannst du den Port ändern (z.B. 8080:80), falls Port 80 belegt ist
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
