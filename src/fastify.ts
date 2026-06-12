@@ -18,13 +18,14 @@ if (meta.is_dev) {
 const fastify = Fastify({
     logger: {
         file: path.join(process.cwd(), 'logs', 'grabberty-server.log')
-    }
+    },
+    requestTimeout: 5 * 60 * 1000 // 5 minutes für längere yt-dlp operations
 })
 
 await fastify.register(RateLimiter, {
     allowList: [],
     max: 50,
-    timeWindow: 1000 * 60 // 1 minute
+    timeWindow: 1000 * 60, // 1 minute
 })
 
 // Set up CORS in dev mode
@@ -43,5 +44,27 @@ if (meta.is_dev) {
         ]
     })
 }
+
+// Globaler Error Handler für unbehandelte Fehler
+fastify.setErrorHandler((error, request, reply) => {
+    console.error('Unhandled error:', error)
+    
+    // Bereits vom Route-Handler behandelte Fehler skip
+    if (reply.statusCode < 400) {
+        reply.statusCode = 500
+    }
+    
+    let errorMessage = 'Internal Server Error'
+    if (error instanceof Error) {
+        errorMessage = error.message
+    } else if (typeof error === 'string') {
+        errorMessage = error
+    }
+    
+    reply.send({
+        success: false,
+        error: errorMessage
+    })
+})
 
 export default fastify
