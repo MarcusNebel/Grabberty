@@ -15,10 +15,18 @@ fastify.get('/api/get-metadata', async (request, reply) => {
         })
     }
 
-    const metadata = await getMetadata(youtubeId)
+    try {
+        const metadata = await getMetadata(youtubeId)
 
-    return {
-        success: true,
-        metadata
+        return {
+            success: true,
+            metadata
+        }
+    } catch (error: any) {
+        console.error('Error fetching metadata:', error)
+        return reply.code(500).send({
+            success: false,
+            error: error.message || 'Internal Server Error'
+        })
     }
 })
