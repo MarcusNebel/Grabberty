@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import icon from "../assets/Grabberty_Logo.svg"
+//import icon from "../assets/Grabberty_Logo.svg"
+import icon2 from "../assets/logo.svg"
 import type {
   BackendAudioFormat,
   BackendMetadata,
@@ -356,7 +357,7 @@ function DownloadBar() {
             isExpanded ? "opacity-90" : isMounted ? "hero-fade" : "opacity-0"
           }`}
         >
-          <img src={icon} className="mb-3 h-12 w-12" alt="Grabberty logo" />
+          <img src={icon2} className="mb-3 h-16 w-16" alt="Grabberty logo" />
           <h1 className="text-4xl font-bold text-[#FFFFFF]">Grabberty</h1>
           <p className="text-[#8E8E93]">Fast, simple and high-quality self-hosted downloader</p>
         </div>
