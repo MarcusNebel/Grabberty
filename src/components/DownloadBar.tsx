@@ -279,11 +279,14 @@ function DownloadBar() {
       if (!nextQualityOptions.length || !nextAudioOptions.length) {
         throw new Error("Keine passenden Video- oder Audioformate gefunden.")
       }
+      
+  const getBest = (options: DropdownOption[]) => 
+    options.find((opt) => opt.value !== "0") || options[0]
 
       setQualityOptions(nextQualityOptions)
       setAudioOptions(nextAudioOptions)
-      setSelectedQuality(nextQualityOptions[0].value)
-      setSelectedAudio(nextAudioOptions[0].value)
+      setSelectedQuality(getBest(nextQualityOptions)?.value || "")
+      setSelectedAudio(getBest(nextAudioOptions)?.value || "")
       setVideoInfo(buildVideoInfo(metadata))
     } catch (error) {
       const message = error instanceof Error ? error.message : "Metadata loading failed"
