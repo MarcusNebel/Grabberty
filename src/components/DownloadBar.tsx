@@ -23,7 +23,6 @@ type VideoInfo = {
   views: string
   duration: string
   format: string
-  fileSize: string
   thumbnail?: string
 }
 
@@ -39,18 +38,30 @@ const formatDuration = (durationSeconds?: number): string => {
 }
 
 const formatFileSize = (bytes?: number): string => {
-  if (!bytes || bytes <= 0) {
-    return "Size unavailable"
-  }
+  if (!bytes || bytes <= 0) return "—"
 
-  const megabytes = bytes / (1024 * 1024)
+  const gb = bytes / (1024 ** 3)
+  const mb = bytes / (1024 ** 2)
+  const kb = bytes / 1024
 
-  if (megabytes >= 1) {
-    return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`
-  }
+  if (gb >= 1) return `${gb.toFixed(2)} GB`
+  if (mb >= 1) return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`
+  return `${kb.toFixed(0)} KB`
+}
 
-  const kilobytes = bytes / 1024
-  return `${kilobytes.toFixed(kilobytes >= 10 ? 0 : 1)} KB`
+const getEstimatedFinalFileSize = (
+  videoFormats: BackendVideoFormat[],
+  audioFormats: BackendAudioFormat[],
+  videoId: string,
+  audioId: string
+): number | undefined => {
+  const video = videoFormats.find(f => f.format_id === videoId)
+  const audio = audioFormats.find(f => f.format_id === audioId)
+
+  const videoSize = video?.filesize ?? video?.filesize_approx ?? 0
+  const audioSize = audio?.filesize ?? audio?.filesize_approx ?? 0
+
+  return videoSize + audioSize || undefined
 }
 
 const buildVideoOptions = (formats: BackendVideoFormat[]): DropdownOption[] => {
@@ -131,7 +142,6 @@ const buildVideoInfo = (metadata: BackendMetadata): VideoInfo => ({
   views: metadata.view_count ? `${metadata.view_count.toLocaleString()} views` : "Views unavailable",
   duration: formatDuration(metadata.duration),
   format: metadata.videoFormats[0]?.ext?.toUpperCase() ?? "MP4",
-  fileSize: formatFileSize(metadata.videoFormats[0]?.filesize ?? metadata.videoFormats[0]?.filesize_approx),
   thumbnail: metadata.thumbnail,
 })
 
@@ -239,7 +249,9 @@ function DownloadBar() {
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null)
+  const [videoFormats, setVideoFormats] = useState<BackendVideoFormat[]>([])
   const [qualityOptions, setQualityOptions] = useState<DropdownOption[]>([])
+  const [audioFormats, setAudioFormats] = useState<BackendAudioFormat[]>([])
   const [audioOptions, setAudioOptions] = useState<DropdownOption[]>([])
   const [selectedQuality, setSelectedQuality] = useState("")
   const [selectedAudio, setSelectedAudio] = useState("")
@@ -273,6 +285,8 @@ function DownloadBar() {
 
     try {
       const metadata = await fetchVideoMetadata(youtubeId)
+      setVideoFormats(metadata.videoFormats)
+      setAudioFormats(metadata.audioFormats)
       const nextQualityOptions = buildVideoOptions(metadata.videoFormats)
       const nextAudioOptions = buildAudioOptions(metadata.audioFormats)
 
@@ -524,7 +538,14 @@ function DownloadBar() {
                           {videoInfo.format}
                         </span>
                         <span className="rounded-full border border-[#555559] bg-[#1B1B1D] px-3 py-1 text-xs font-semibold text-[#8E8E93]">
-                          {videoInfo.fileSize}
+                          {formatFileSize(
+                            getEstimatedFinalFileSize(
+                              videoFormats,
+                              audioFormats,
+                              selectedQuality,
+                              selectedAudio
+                            )
+                          )}
                         </span>
                       </div>
                     </div>
