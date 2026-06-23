@@ -29,7 +29,11 @@ fastify.get('/api/download-media', async (request, reply) => {
     try {
         const { stream, filename, mimeType } = await downloadMedia(videoId, audioId, youtubeId)
 
-        reply.header('Content-Disposition', `attachment; filename="${filename}"`)
+        const asciiFilename = filename.replace(/[^\x00-\x7F]/g, '').trim()
+        
+        const fallbackName = asciiFilename || `download-${youtubeId}.mp4`
+
+        reply.header('Content-Disposition', `attachment; filename="${fallbackName}"`)
         reply.header('Content-Type', mimeType)
 
         console.log(`Download finished for ${youtubeId}`)

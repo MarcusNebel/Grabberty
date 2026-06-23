@@ -29,7 +29,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
         }
         // -----------------------------
 
-        let filename = ''
+        let filenameTemplate = ''
         let mimeType = ''
         let finalArgs: string[] = []
 
@@ -45,27 +45,27 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
         }
 
         if (videoId !== "0" && audioId !== "0") {
-            filename = `${youtubeId}.mp4`
+            filenameTemplate = `%(title)s.%(ext)s`
             mimeType = 'video/mp4'
             finalArgs = [
                 '-f', `${videoId}+${audioId}`, 
                 '--merge-output-format', 'mp4', 
                 ...baseArgs,
                 youtubeId, 
-                '-o', path.join(tmpDir, `${youtubeId}.%(ext)s`)
+                '-o', path.join(tmpDir, filenameTemplate)
             ]
         } else if (videoId !== "0" && audioId === "0") {
-            filename = `video-only-${youtubeId}.mp4`
+            filenameTemplate = `video-only-%(title)s.%(ext)s`
             mimeType = 'video/mp4'
             finalArgs = [
                 '-f', videoId, 
                 '--merge-output-format', 'mp4', 
                 ...baseArgs,
                 youtubeId, 
-                '-o', path.join(tmpDir, `video-only-${youtubeId}.%(ext)s`)
+                '-o', path.join(tmpDir, filenameTemplate)
             ]
         } else if (videoId === "0" && audioId !== "0") {
-            filename = `audio-only-${youtubeId}.mp3`
+            filenameTemplate = `audio-only-%(title)s.%(ext)s`
             mimeType = 'audio/mpeg'
             finalArgs = [
                 '-f', audioId, 
@@ -73,7 +73,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '--audio-format', 'mp3', 
                 ...baseArgs,
                 youtubeId, 
-                '-o', path.join(tmpDir, `audio-only-${youtubeId}.%(ext)s`)
+                '-o', path.join(tmpDir, filenameTemplate)
             ]
         } else {
             return reject(new Error('Can not define for video, audio or both'))
@@ -109,22 +109,52 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 return reject(new Error(`yt-dlp exited with code ${code}: ${errorMsg}`))
             }
 
-            const fullPath = path.join(tmpDir, filename)
+            // Holt alle Zeilen aus der Standardausgabe
+            const lines = stdoutOutput.split('\n')
             
-            // Stream von der Festplatte erstellen
+            let fullPath = ''
+
+            // 1. Schauen wir, ob ffmpeg Video + Audio zusammengefügt hat (wichtig bei HD)
+            const mergerLine = lines.find(line => line.includes('[Merger] Merging formats into'))
+            
+            if (mergerLine) {
+                // Holt den Pfad, der zwischen den Anführungszeichen steht
+                const match = mergerLine.match(/"([^"]+)"/)
+                if (match && match[1]) {
+                    fullPath = match[1].trim()
+                }
+            }
+
+            // 2. Fallback: Falls kein Merger aktiv war (z.B. nur Audio oder nur Video geladen wurde)
+            if (!fullPath) {
+                const destinationLine = lines.find(line => line.includes('[download] Destination:'))
+                if (destinationLine) {
+                    fullPath = destinationLine.replace('[download] Destination:', '').trim()
+                }
+            }
+
+            // Sicherheitscheck: Haben wir den Pfad gefunden und existiert die Datei?
+            if (!fullPath || !fs.existsSync(fullPath)) {
+                return reject(new Error(`Datei wurde von yt-dlp nicht gefunden. Ermittelter Pfad: ${fullPath || 'Unbekannt'}`))
+            }
+            
+            // Extrahiert den reinen Dateinamen für den Browser
+            const finalFilename = path.basename(fullPath)
+            
+            // Stream von der echten Festplattendatei erstellen
             const fileStream = fs.createReadStream(fullPath)
 
-            // OPTIONAL: Datei nach dem Senden automatisch vom Server löschen
+            // Datei nach dem Senden automatisch vom Server löschen
             fileStream.on('close', () => {
                 fs.unlink(fullPath, (err) => {
                     if (err) console.error('Fehler beim Löschen der temporären Datei:', err)
                 })
             })
 
-            // Versprechen mit dem Stream auflösen
+            // Versprechen auflösen
             resolve({
                 stream: fileStream,
-                filename: filename,
+                filename: finalFilename, 
                 mimeType: mimeType
             })
         })
