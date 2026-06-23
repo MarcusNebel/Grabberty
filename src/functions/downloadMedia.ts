@@ -15,29 +15,44 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             return reject(new Error('No YouTube ID, Video ID or Audio ID provided'))
         }
 
-        // 1. Ordner definieren
+        // define tmp folder
         const tmpDir = path.join(__dirname, '../../tmp')
         if (!fs.existsSync(tmpDir)){
             fs.mkdirSync(tmpDir, { recursive: true })
         }
 
+        // --- COOKIES CONFIGURATION ---
+        const cookiesPath = '/app/cookies.txt'
+        const useCookies = fs.existsSync(cookiesPath)
+        if (!useCookies) {
+            console.warn(`[Grabberty] Warning: No cookies found under ${cookiesPath}. Continuing without cookies...`)
+        }
+        // -----------------------------
+
         let filename = ''
         let mimeType = ''
         let finalArgs: string[] = []
 
-        // Wichtig: Wir nutzen .%(ext)s im Output-Pfad, damit yt-dlp die korrekte Endung setzt!
+        //  base arguments for yt-dlp downloads
+        const baseArgs = [
+            '--js-runtimes', 'node',
+            '--remote-components', 'ejs:github',
+            '--extractor-args', 'youtube:player-client=web_embedded',
+        ]
+
+        if (useCookies) {
+            baseArgs.push('--cookies', cookiesPath)
+        }
+
         if (videoId !== "0" && audioId !== "0") {
             filename = `${youtubeId}.mp4`
             mimeType = 'video/mp4'
             finalArgs = [
                 '-f', `${videoId}+${audioId}`, 
                 '--merge-output-format', 'mp4', 
-                '--js-runtimes', 'node',
-                '--remote-components', 'ejs:github',
+                ...baseArgs,
                 youtubeId, 
-                '--cookies',
-                'cookies.txt',
-                '-o', path.join(tmpDir, `${youtubeId}.%(ext)s`) // <--- Hier .%(ext)s nutzen
+                '-o', path.join(tmpDir, `${youtubeId}.%(ext)s`)
             ]
         } else if (videoId !== "0" && audioId === "0") {
             filename = `video-only-${youtubeId}.mp4`
@@ -45,11 +60,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             finalArgs = [
                 '-f', videoId, 
                 '--merge-output-format', 'mp4', 
-                '--js-runtimes', 'node',
-                '--remote-components', 'ejs:github',
+                ...baseArgs,
                 youtubeId, 
-                '--cookies',
-                'cookies.txt', 
                 '-o', path.join(tmpDir, `video-only-${youtubeId}.%(ext)s`)
             ]
         } else if (videoId === "0" && audioId !== "0") {
@@ -59,11 +71,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', audioId, 
                 '-x', 
                 '--audio-format', 'mp3', 
-                '--js-runtimes', 'node',
-                '--remote-components', 'ejs:github',
+                ...baseArgs,
                 youtubeId, 
-                '--cookies',
-                'cookies.txt',
                 '-o', path.join(tmpDir, `audio-only-${youtubeId}.%(ext)s`)
             ]
         } else {
