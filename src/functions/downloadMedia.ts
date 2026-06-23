@@ -32,6 +32,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             finalArgs = [
                 '-f', `${videoId}+${audioId}`, 
                 '--merge-output-format', 'mp4', 
+                '--js-runtimes', 'node',
+                '--remote-components', 'ejs:github',
                 youtubeId, 
                 '--cookies',
                 'cookies.txt',
@@ -43,6 +45,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             finalArgs = [
                 '-f', videoId, 
                 '--merge-output-format', 'mp4', 
+                '--js-runtimes', 'node',
+                '--remote-components', 'ejs:github',
                 youtubeId, 
                 '--cookies',
                 'cookies.txt', 
@@ -55,6 +59,8 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', audioId, 
                 '-x', 
                 '--audio-format', 'mp3', 
+                '--js-runtimes', 'node',
+                '--remote-components', 'ejs:github',
                 youtubeId, 
                 '--cookies',
                 'cookies.txt',
