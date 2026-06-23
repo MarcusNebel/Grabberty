@@ -22,7 +22,6 @@ type VideoInfo = {
   channel: string
   views: string
   duration: string
-  format: string
   thumbnail?: string
 }
 
@@ -62,6 +61,24 @@ const getEstimatedFinalFileSize = (
   const audioSize = audio?.filesize ?? audio?.filesize_approx ?? 0
 
   return videoSize + audioSize || undefined
+}
+
+const getOutputFormat = (
+  videoId: string,
+  audioId: string
+): string => {
+  const videoSkipped = videoId === "0"
+  const audioSkipped = audioId === "0"
+
+  if (videoSkipped && audioSkipped) {
+    return "—"
+  }
+
+  if (videoSkipped) {
+    return "MP3"
+  }
+
+  return "MP4"
 }
 
 const buildVideoOptions = (formats: BackendVideoFormat[]): DropdownOption[] => {
@@ -141,7 +158,6 @@ const buildVideoInfo = (metadata: BackendMetadata): VideoInfo => ({
   channel: metadata.channel ?? metadata.uploader ?? "Unknown channel",
   views: metadata.view_count ? `${metadata.view_count.toLocaleString()} views` : "Views unavailable",
   duration: formatDuration(metadata.duration),
-  format: metadata.videoFormats[0]?.ext?.toUpperCase() ?? "MP4",
   thumbnail: metadata.thumbnail,
 })
 
@@ -534,7 +550,7 @@ function DownloadBar() {
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2">
                         <span className="rounded-full border border-[#E53925]/30 bg-[#E53925]/12 px-3 py-1 text-xs font-semibold text-[#E53925]">
-                          {videoInfo.format}
+                          {getOutputFormat(selectedQuality, selectedAudio)}
                         </span>
                         <span className="rounded-full border border-[#555559] bg-[#1B1B1D] px-3 py-1 text-xs font-semibold text-[#8E8E93]">
                           {formatFileSize(
