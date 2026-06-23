@@ -234,7 +234,6 @@ function DropdownField({
               }`}
             >
               <span>{option.label}</span>
-              {active ? <span className="text-xs text-[#FFFFFF]">Selected</span> : null}
             </button>
           )
         })}
