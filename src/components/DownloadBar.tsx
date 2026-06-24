@@ -309,8 +309,8 @@ function DownloadBar() {
         throw new Error("Keine passenden Video- oder Audioformate gefunden.")
       }
       
-      const getBest = (options: DropdownOption[]) => 
-        options.find((opt) => opt.value !== "0") || options[0]
+  const getBest = (options: DropdownOption[]) => 
+    options.find((opt) => opt.value !== "0") || options[0]
 
       setQualityOptions(nextQualityOptions)
       setAudioOptions(nextAudioOptions)
@@ -404,8 +404,7 @@ function DownloadBar() {
           }`}
         >
           <div className="p-5 sm:p-6 overflow-visible">
-            {/* Action panel: stacks on mobile/tablet (flex-col), transforms into standard inline row layout on md+ desktop screens */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <div className="flex items-center gap-3">
               <div className="flex min-w-0 flex-1 items-center rounded-[14px] border border-[#242427] bg-[#242427] px-4 h-[50px] transition-colors duration-300 focus-within:border-[#8E8E93] focus-within:bg-[#27272a]">
                 <span className="mr-3 flex h-5 w-5 flex-shrink-0 items-center justify-center text-[#8E8E93]">
                   <svg
@@ -448,35 +447,32 @@ function DownloadBar() {
                 />
               </div>
 
-              {/* Flex wrapper for options: Side-by-side distribution layout on smaller viewports */}
-              <div className="flex gap-3 w-full md:w-auto">
-                <div
-                  className={`flex-1 md:flex-none transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    isExpanded ? "max-w-full md:max-w-[155px] opacity-100" : "max-w-0 opacity-0 pointer-events-none hidden md:block"
-                  }`}
-                >
-                  <DropdownField
-                    label="Quality"
-                    value={selectedQuality}
-                    onChange={setSelectedQuality}
-                    options={qualityOptions}
-                    disabled={isLoading || !qualityOptions.length}
-                  />
-                </div>
+              <div
+                className={`transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isExpanded ? "max-w-[155px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
+                }`}
+              >
+                <DropdownField
+                  label="Quality"
+                  value={selectedQuality}
+                  onChange={setSelectedQuality}
+                  options={qualityOptions}
+                  disabled={isLoading || !qualityOptions.length}
+                />
+              </div>
 
-                <div
-                  className={`flex-1 md:flex-none transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    isExpanded ? "max-w-full md:max-w-[155px] opacity-100" : "max-w-0 opacity-0 pointer-events-none hidden md:block"
-                  }`}
-                >
-                  <DropdownField
-                    label="Audio"
-                    value={selectedAudio}
-                    onChange={setSelectedAudio}
-                    options={audioOptions}
-                    disabled={isLoading || !audioOptions.length}
-                  />
-                </div>
+              <div
+                className={`transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isExpanded ? "max-w-[155px] opacity-100" : "max-w-0 opacity-0 pointer-events-none"
+                }`}
+              >
+                <DropdownField
+                  label="Audio"
+                  value={selectedAudio}
+                  onChange={setSelectedAudio}
+                  options={audioOptions}
+                  disabled={isLoading || !audioOptions.length}
+                />
               </div>
 
               <button
@@ -485,8 +481,8 @@ function DownloadBar() {
                 disabled={!canSubmit || isLoading}
                 className={`h-[50px] rounded-[14px] px-6 text-sm font-semibold text-[#FFFFFF] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
                   isExpanded
-                    ? "w-full md:min-w-[150px] md:w-auto bg-[#E53925] hover:bg-[#E5533C]"
-                    : "w-full md:min-w-[120px] md:w-auto bg-[#E53925] hover:bg-[#E5533C]"
+                    ? "min-w-[150px] bg-[#E53925] hover:bg-[#E5533C]"
+                    : "min-w-[120px] bg-[#E53925] hover:bg-[#E5533C]"
                 }`}
               >
                 {isExpanded ? (isLoading ? "..." : "Download") : "Next"}
@@ -495,7 +491,7 @@ function DownloadBar() {
 
             <div
               className={`slide-content overflow-hidden ${
-                isExpanded ? "mt-5 max-h-[600px] md:max-h-[320px] opacity-100" : "mt-0 max-h-0 opacity-0"
+                isExpanded ? "mt-5 max-h-[320px] opacity-100" : "mt-0 max-h-0 opacity-0"
               }`}
             >
               {errorMessage ? (
@@ -506,8 +502,8 @@ function DownloadBar() {
 
               {isLoading && !videoInfo ? (
                 <div className="rounded-[18px] border border-[#242427] bg-[#242427] p-4">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="h-[160px] md:h-[122px] w-full md:w-[212px] animate-pulse rounded-[14px] bg-[#1B1B1D]" />
+                  <div className="flex gap-4">
+                    <div className="h-[122px] w-[212px] animate-pulse rounded-[14px] bg-[#1B1B1D]" />
                     <div className="flex-1 space-y-3 pt-1">
                       <div className="h-5 w-[78%] animate-pulse rounded-full bg-[#1B1B1D]" />
                       <div className="h-4 w-[48%] animate-pulse rounded-full bg-[#1B1B1D]" />
@@ -520,8 +516,8 @@ function DownloadBar() {
                 </div>
               ) : videoInfo ? (
                 <div className="rounded-[18px] border border-[#242427] bg-[#242427] p-4">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="relative h-[160px] md:h-[122px] w-full overflow-hidden rounded-[14px] bg-gradient-to-br from-[#1D1E31] via-[#17172A] to-[#111114] md:w-[220px] md:flex-shrink-0">
+                  <div className="flex flex-col gap-4 lg:flex-row">
+                    <div className="relative h-[122px] w-full overflow-hidden rounded-[14px] bg-gradient-to-br from-[#1D1E31] via-[#17172A] to-[#111114] lg:w-[220px] lg:flex-shrink-0">
                       {videoInfo.thumbnail ? (
                         <img
                           src={videoInfo.thumbnail}
@@ -578,6 +574,5 @@ function DownloadBar() {
     </div>
   )
 }
-
 
 export default DownloadBar
