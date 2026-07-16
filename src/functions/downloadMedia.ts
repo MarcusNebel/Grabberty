@@ -32,6 +32,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
         let filenameTemplate = ''
         let mimeType = ''
         let finalArgs: string[] = []
+        let outputPrefix = ''
 
         //  base arguments for yt-dlp downloads
         const baseArgs = [
@@ -46,6 +47,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
 
         if (videoId !== "0" && audioId !== "0") {
             filenameTemplate = `%(title)s.%(ext)s`
+            outputPrefix = ''
             mimeType = 'video/mp4'
             finalArgs = [
                 '-f', `${videoId}+${audioId}`, 
@@ -56,6 +58,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             ]
         } else if (videoId !== "0" && audioId === "0") {
             filenameTemplate = `video-only-%(title)s.%(ext)s`
+            outputPrefix = 'video-only-'
             mimeType = 'video/mp4'
             finalArgs = [
                 '-f', videoId, 
@@ -66,6 +69,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             ]
         } else if (videoId === "0" && audioId !== "0") {
             filenameTemplate = `audio-only-%(title)s.%(ext)s`
+            outputPrefix = 'audio-only-'
             mimeType = 'audio/mpeg'
             finalArgs = [
                 '-f', audioId, 
@@ -112,24 +116,69 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             // Holt alle Zeilen aus der Standardausgabe
             const lines = stdoutOutput.split('\n')
             
-            let fullPath = ''
+            const candidatePaths: string[] = []
 
-            // 1. Schauen wir, ob ffmpeg Video + Audio zusammengefügt hat (wichtig bei HD)
-            const mergerLine = lines.find(line => line.includes('[Merger] Merging formats into'))
-            
-            if (mergerLine) {
-                // Holt den Pfad, der zwischen den Anführungszeichen steht
-                const match = mergerLine.match(/"([^"]+)"/)
-                if (match && match[1]) {
-                    fullPath = match[1].trim()
+            for (const line of lines) {
+                const mergerMatch = line.match(/\[Merger\]\s+Merging formats into\s+"([^"]+)"/)
+                if (mergerMatch?.[1]) {
+                    candidatePaths.push(mergerMatch[1].trim())
+                }
+
+                const downloadDestinationMatch = line.match(/\[download\]\s+Destination:\s+(.+)/)
+                if (downloadDestinationMatch?.[1]) {
+                    candidatePaths.push(downloadDestinationMatch[1].trim())
+                }
+
+                const extractAudioDestinationMatch = line.match(/\[ExtractAudio\]\s+Destination:\s+(.+)/)
+                if (extractAudioDestinationMatch?.[1]) {
+                    candidatePaths.push(extractAudioDestinationMatch[1].trim())
+                }
+
+                const alreadyDownloadedMatch = line.match(/\[download\]\s+(.+?)\s+has already been downloaded/)
+                if (alreadyDownloadedMatch?.[1]) {
+                    candidatePaths.push(alreadyDownloadedMatch[1].trim())
                 }
             }
 
-            // 2. Fallback: Falls kein Merger aktiv war (z.B. nur Audio oder nur Video geladen wurde)
+            let fullPath = ''
+            for (let i = candidatePaths.length - 1; i >= 0; i--) {
+                const candidate = candidatePaths[i]
+                if (!candidate) {
+                    continue
+                }
+
+                if (fs.existsSync(candidate)) {
+                    fullPath = candidate
+                    break
+                }
+
+                // Falls zuerst die Zwischen-Datei (.m4a) erkannt wurde, pruefe den finalen mp3-Pfad.
+                if (path.extname(candidate).toLowerCase() === '.m4a') {
+                    const asMp3 = candidate.replace(/\.m4a$/i, '.mp3')
+                    if (fs.existsSync(asMp3)) {
+                        fullPath = asMp3
+                        break
+                    }
+                }
+            }
+
             if (!fullPath) {
-                const destinationLine = lines.find(line => line.includes('[download] Destination:'))
-                if (destinationLine) {
-                    fullPath = destinationLine.replace('[download] Destination:', '').trim()
+                // Letzter Fallback: passende Datei aus tmp suchen, falls yt-dlp keinen eindeutigen Pfad ausgegeben hat.
+                const expectedExtensions = mimeType === 'audio/mpeg'
+                    ? ['.mp3', '.m4a', '.webm']
+                    : ['.mp4', '.mkv', '.webm']
+
+                const fallbackFiles = fs.readdirSync(tmpDir)
+                    .filter(file => !outputPrefix || file.startsWith(outputPrefix))
+                    .filter(file => expectedExtensions.includes(path.extname(file).toLowerCase()))
+                    .map(file => ({
+                        file,
+                        mtimeMs: fs.statSync(path.join(tmpDir, file)).mtimeMs
+                    }))
+                    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+
+                if (fallbackFiles[0]) {
+                    fullPath = path.join(tmpDir, fallbackFiles[0].file)
                 }
             }
 
