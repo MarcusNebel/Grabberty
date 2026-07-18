@@ -2,8 +2,12 @@ import fastify from './fastify'
 import './routes/getApiPing'
 import './routes/api/getGetMetadata'
 import './routes/api/getDownloadMedia'
+import './functions/update_yt-dlp'
+import { checkYtdlp } from './functions/update_yt-dlp'
 
 console.log('Starting Grabberty')
+
+checkYtdlp()
 
 fastify.listen({ port: 3000, host: '0.0.0.0' }, function (err, address) {
     if (err) {
