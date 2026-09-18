@@ -1,4 +1,5 @@
 import { spawn } from 'child_process'
+import { ar } from 'zod/locales'
 
 interface YoutubeMetadata {
     id: string
@@ -72,8 +73,18 @@ export function getMetadata(youtubeId: string): Promise<YoutubeMetadata> {
         }
 
         const args = ['--dump-single-json', youtubeId]
+        const baseArgs = [
+            '--js-runtimes', 'node',
+            '--remote-components', 'ejs:github',
+            '--extractor-args', 'youtube:player-client=web_embedded',
+        ]
 
-        const yt = spawn('yt-dlp', args)
+        const finalArgs = [
+            ...baseArgs,
+            ...args
+        ]
+
+        const yt = spawn('yt-dlp', finalArgs)
 
         let outputData = ''
         let errorData = ''
