@@ -33,6 +33,14 @@ curl -O https://raw.githubusercontent.com/marcusnebel/grabberty/main/nginx.conf
 
 ```
 
+#### *(Dev-Files)*
+```bash
+mkdir grabberty-dev && cd grabberty-dev
+curl -O https://raw.githubusercontent.com/marcusnebel/grabberty/main/docker-compose.dev.yml
+curl -O https://raw.githubusercontent.com/marcusnebel/grabberty/main/nginx.conf
+
+```
+
 ### 2. Anwendung starten
 
 Führe im selben Ordner den folgenden Befehl aus, um die Docker-Container im Hintergrund zu starten:
