@@ -7,9 +7,22 @@ export interface DownloadMedia {
     stream: Readable,       // The filestream to browser
     filename: string,       // Name of the streamed file
     mimeType: string        // for example "audio/mpeg" or "video/mp4"
+    filePath: string
 }
 
-export function downloadMedia(videoId: string, audioId: string, youtubeId: string): Promise<DownloadMedia> {
+export interface DownloadProgress {
+    status: 'starting' | 'downloading' | 'converting' | 'completed'
+    progress?: number
+    message: string
+}
+
+export function downloadMedia(
+    videoId: string,
+    audioId: string,
+    youtubeId: string,
+    onProgress?: (progress: DownloadProgress) => void,
+    createStream = true
+): Promise<DownloadMedia> {
     return new Promise((resolve, reject) => {
         if (!youtubeId || !videoId || !audioId) {
             return reject(new Error('No YouTube ID, Video ID or Audio ID provided'))
@@ -83,22 +96,83 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             return reject(new Error('Can not define for video, audio or both'))
         }
 
+        onProgress?.({
+            status: 'starting',
+            progress: 0,
+            message: 'Download wird gestartet'
+        })
+
         // 2. Prozess starten mit den dynamisch gesetzten Argumenten
-        const yt = spawn('yt-dlp', finalArgs)
+        const yt = spawn('yt-dlp', [
+            ...finalArgs.slice(0, finalArgs.length - 2),
+            '--newline',
+            '--progress-template', 'download:%(progress._percent_str)s|%(progress.status)s',
+            ...finalArgs.slice(-2)
+        ])
         
         let stderrOutput = ''
         let stdoutOutput = ''
+        let stdoutBuffer = ''
+        let stderrBuffer = ''
+
+        const handleOutput = (output: string): void => {
+            for (const line of output.split(/\r\n|\n|\r/)) {
+                const progressMatch = line.match(/(?:^|\[download\]\s*)download:\s*([\d.]+)%\|(\w+)/)
+                    ?? line.match(/\[download\]\s+([\d.]+(?:\.\d+)?)%/)
+                    ?? line.match(/^\s*([\d.]+(?:\.\d+)?)%\|(\w+)/)
+                if (progressMatch?.[1]) {
+                    const rawProgress = Number.parseFloat(progressMatch[1])
+                    if (!Number.isFinite(rawProgress)) {
+                        continue
+                    }
+
+                    onProgress?.({
+                        status: 'downloading',
+                        progress: Math.min(85, rawProgress * 0.85),
+                        message: `Download läuft (${rawProgress.toFixed(1)} %)`
+                    })
+                }
+
+                if (line.includes('[ExtractAudio]')) {
+                    onProgress?.({
+                        status: 'converting',
+                        progress: 90,
+                        message: 'Audio wird konvertiert'
+                    })
+                }
+            }
+        }
+
+        const handleChunk = (
+            data: Buffer,
+            stream: 'stdout' | 'stderr'
+        ): void => {
+            const output = data.toString()
+            if (stream === 'stdout') {
+                stdoutOutput += output
+                stdoutBuffer += output
+                console.log('[yt-dlp stdout]', output)
+                const lines = stdoutBuffer.split(/\r\n|\n|\r/)
+                stdoutBuffer = lines.pop() ?? ''
+                handleOutput(lines.join('\n'))
+            } else {
+                stderrOutput += output
+                stderrBuffer += output
+                console.error('[yt-dlp stderr]', output)
+                const lines = stderrBuffer.split(/\r\n|\n|\r/)
+                stderrBuffer = lines.pop() ?? ''
+                handleOutput(lines.join('\n'))
+            }
+        }
 
         // Fehler-Output erfassen
         yt.stderr?.on('data', (data) => {
-            stderrOutput += data.toString()
-            console.error('[yt-dlp stderr]', data.toString())
+            handleChunk(data, 'stderr')
         })
         
         // Standard-Output erfassen
         yt.stdout?.on('data', (data) => {
-            stdoutOutput += data.toString()
-            console.log('[yt-dlp stdout]', data.toString())
+            handleChunk(data, 'stdout')
         })
 
         // Fehler abfangen, falls z.B. yt-dlp nicht gefunden wird
@@ -108,6 +182,9 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
 
         // 3. Warten, bis der Download komplett abgeschlossen ist
         yt.on('close', (code) => {
+            handleOutput(stdoutBuffer)
+            handleOutput(stderrBuffer)
+
             if (code !== 0) {
                 const errorMsg = stderrOutput || stdoutOutput || 'No error message from yt-dlp'
                 return reject(new Error(`yt-dlp exited with code ${code}: ${errorMsg}`))
@@ -191,20 +268,23 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             const finalFilename = path.basename(fullPath)
             
             // Stream von der echten Festplattendatei erstellen
-            const fileStream = fs.createReadStream(fullPath)
+            const fileStream = createStream ? fs.createReadStream(fullPath) : Readable.from([])
 
             // Datei nach dem Senden automatisch vom Server löschen
-            fileStream.on('close', () => {
-                fs.unlink(fullPath, (err) => {
-                    if (err) console.error('Fehler beim Löschen der temporären Datei:', err)
+            if (createStream) {
+                fileStream.on('close', () => {
+                    fs.unlink(fullPath, (err) => {
+                        if (err) console.error('Fehler beim Löschen der temporären Datei:', err)
+                    })
                 })
-            })
+            }
 
             // Versprechen auflösen
             resolve({
                 stream: fileStream,
                 filename: finalFilename, 
-                mimeType: mimeType
+                mimeType: mimeType,
+                filePath: fullPath
             })
         })
     })
