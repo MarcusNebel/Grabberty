@@ -1,42 +1,34 @@
 import fastify from '../../fastify'
 import { downloadMedia } from '../../functions/downloadMedia'
 
-fastify.get('/api/download-media', async (request, reply) => {
-    const rawAudioId = request.headers['audioid'] ?? request.headers['audio-id']
-    const rawVideoId = request.headers['videoid'] ?? request.headers['video-id']
-    const rawYoutubeId = request.headers['youtubeid'] ?? request.headers['youtube-id']
+export interface DownloadQuery {
+    audioid?: string
+    videoid?: string
+    youtubeid?: string
+}
 
-    const audioId = Array.isArray(rawAudioId)
-        ? rawAudioId[0]
-        : rawAudioId
+fastify.get<{ Querystring: DownloadQuery }>('/api/download-media', async (request, reply) => {
+    const { audioid, videoid, youtubeid } = request.query
 
-    const videoId = Array.isArray(rawVideoId)
-        ? rawVideoId[0]
-        : rawVideoId
-
-    const youtubeId = Array.isArray(rawYoutubeId)
-        ? rawYoutubeId[0]
-        : rawYoutubeId
-
-    if(!audioId || !videoId || !youtubeId) {
+    if(!audioid || !videoid || !youtubeid) {
         reply.code(400).send({
             success: false,
-            error: 'Missing audioId or videoId or youtubeId header'
+            error: 'Missing audioId or videoId or youtubeId query parameter'
         })
         return
     }
 
     try {
-        const { stream, filename, mimeType } = await downloadMedia(videoId, audioId, youtubeId)
+        const { stream, filename, mimeType } = await downloadMedia(videoid, audioid, youtubeid)
 
         const asciiFilename = filename.replace(/[^\x00-\x7F]/g, '').trim()
         
-        const fallbackName = asciiFilename || `download-${youtubeId}.mp4`
+        const fallbackName = asciiFilename || `download-${youtubeid}.mp4`
 
-        reply.header('Content-Disposition', `attachment; filename="${fallbackName}"`)
+        reply.header('Content-Disposition', `attachment; filename="${fallbackName}"; filename*=UTF-8''${encodeURIComponent(filename)}`)
         reply.header('Content-Type', mimeType)
 
-        console.log(`Download finished for ${youtubeId}`)
+        console.log(`Download finished for ${youtubeid}`)
         return reply.send(stream)
     } catch (error: any) {
         console.error('Error by media download:', error)
