@@ -86,6 +86,8 @@ export function getMetadata(youtubeId: string): Promise<YoutubeMetadata> {
 
         const yt = spawn('yt-dlp', finalArgs)
 
+        console.log(`yt-dlp command: yt-dlp ${finalArgs}`)
+
         let outputData = ''
         let errorData = ''
 
