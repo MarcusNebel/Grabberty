@@ -119,6 +119,7 @@ export function downloadMedia(
             for (const line of output.split(/\r\n|\n|\r/)) {
                 const progressMatch = line.match(/(?:^|\[download\]\s*)download:\s*([\d.]+)%\|(\w+)/)
                     ?? line.match(/\[download\]\s+([\d.]+(?:\.\d+)?)%/)
+                    ?? line.match(/^\s*([\d.]+(?:\.\d+)?)%\|(\w+)/)
                 if (progressMatch?.[1]) {
                     const rawProgress = Number.parseFloat(progressMatch[1])
                     if (!Number.isFinite(rawProgress)) {
