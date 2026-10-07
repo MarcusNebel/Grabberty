@@ -7,9 +7,22 @@ export interface DownloadMedia {
     stream: Readable,       // The filestream to browser
     filename: string,       // Name of the streamed file
     mimeType: string        // for example "audio/mpeg" or "video/mp4"
+    filePath: string
 }
 
-export function downloadMedia(videoId: string, audioId: string, youtubeId: string): Promise<DownloadMedia> {
+export interface DownloadProgress {
+    status: 'starting' | 'downloading' | 'converting' | 'completed'
+    progress?: number
+    message: string
+}
+
+export function downloadMedia(
+    videoId: string,
+    audioId: string,
+    youtubeId: string,
+    onProgress?: (progress: DownloadProgress) => void,
+    createStream = true
+): Promise<DownloadMedia> {
     return new Promise((resolve, reject) => {
         if (!youtubeId || !videoId || !audioId) {
             return reject(new Error('No YouTube ID, Video ID or Audio ID provided'))
@@ -83,8 +96,19 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             return reject(new Error('Can not define for video, audio or both'))
         }
 
+        onProgress?.({
+            status: 'starting',
+            progress: 0,
+            message: 'Download wird gestartet'
+        })
+
         // 2. Prozess starten mit den dynamisch gesetzten Argumenten
-        const yt = spawn('yt-dlp', finalArgs)
+        const yt = spawn('yt-dlp', [
+            ...finalArgs.slice(0, finalArgs.length - 2),
+            '--newline',
+            '--progress-template', 'download:%(progress._percent_str)s|%(progress.status)s',
+            ...finalArgs.slice(-2)
+        ])
         
         let stderrOutput = ''
         let stdoutOutput = ''
@@ -97,8 +121,28 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
         
         // Standard-Output erfassen
         yt.stdout?.on('data', (data) => {
-            stdoutOutput += data.toString()
-            console.log('[yt-dlp stdout]', data.toString())
+            const output = data.toString()
+            stdoutOutput += output
+            console.log('[yt-dlp stdout]', output)
+
+            for (const line of output.split(/\r?\n/)) {
+                const progressMatch = line.match(/^download:\s*([\d.]+)%\|(\w+)/)
+                if (progressMatch?.[1] && progressMatch[2]) {
+                    onProgress?.({
+                        status: 'downloading',
+                        progress: Math.min(85, Number(progressMatch[1]) * 0.85),
+                        message: `Download läuft (${progressMatch[1]} %)`
+                    })
+                }
+
+                if (line.includes('[ExtractAudio]')) {
+                    onProgress?.({
+                        status: 'converting',
+                        progress: 90,
+                        message: 'Audio wird konvertiert'
+                    })
+                }
+            }
         })
 
         // Fehler abfangen, falls z.B. yt-dlp nicht gefunden wird
@@ -191,20 +235,23 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
             const finalFilename = path.basename(fullPath)
             
             // Stream von der echten Festplattendatei erstellen
-            const fileStream = fs.createReadStream(fullPath)
+            const fileStream = createStream ? fs.createReadStream(fullPath) : Readable.from([])
 
             // Datei nach dem Senden automatisch vom Server löschen
-            fileStream.on('close', () => {
-                fs.unlink(fullPath, (err) => {
-                    if (err) console.error('Fehler beim Löschen der temporären Datei:', err)
+            if (createStream) {
+                fileStream.on('close', () => {
+                    fs.unlink(fullPath, (err) => {
+                        if (err) console.error('Fehler beim Löschen der temporären Datei:', err)
+                    })
                 })
-            })
+            }
 
             // Versprechen auflösen
             resolve({
                 stream: fileStream,
                 filename: finalFilename, 
-                mimeType: mimeType
+                mimeType: mimeType,
+                filePath: fullPath
             })
         })
     })
