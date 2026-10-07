@@ -72,7 +72,7 @@ export function getMetadata(youtubeId: string): Promise<YoutubeMetadata> {
             reject(new Error('No YouTube ID provided'))
         }
 
-        const args = ['--dump-single-json', youtubeId]
+        const args = ['--dump-single-json', `"${youtubeId}"`]
         const baseArgs = [
             '--js-runtimes', 'node',
             '--remote-components', 'ejs:github',
