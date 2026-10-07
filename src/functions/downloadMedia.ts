@@ -116,13 +116,19 @@ export function downloadMedia(
         let stderrBuffer = ''
 
         const handleOutput = (output: string): void => {
-            for (const line of output.split(/\r?\n/)) {
-                const progressMatch = line.match(/download:\s*([\d.]+)%\|(\w+)/)
-                if (progressMatch?.[1] && progressMatch[2]) {
+            for (const line of output.split(/\r\n|\n|\r/)) {
+                const progressMatch = line.match(/(?:^|\[download\]\s*)download:\s*([\d.]+)%\|(\w+)/)
+                    ?? line.match(/\[download\]\s+([\d.]+(?:\.\d+)?)%/)
+                if (progressMatch?.[1]) {
+                    const rawProgress = Number.parseFloat(progressMatch[1])
+                    if (!Number.isFinite(rawProgress)) {
+                        continue
+                    }
+
                     onProgress?.({
                         status: 'downloading',
-                        progress: Math.min(85, Number(progressMatch[1]) * 0.85),
-                        message: `Download läuft (${progressMatch[1]} %)`
+                        progress: Math.min(85, rawProgress * 0.85),
+                        message: `Download läuft (${rawProgress.toFixed(1)} %)`
                     })
                 }
 
@@ -145,14 +151,14 @@ export function downloadMedia(
                 stdoutOutput += output
                 stdoutBuffer += output
                 console.log('[yt-dlp stdout]', output)
-                const lines = stdoutBuffer.split(/\r?\n/)
+                const lines = stdoutBuffer.split(/\r\n|\n|\r/)
                 stdoutBuffer = lines.pop() ?? ''
                 handleOutput(lines.join('\n'))
             } else {
                 stderrOutput += output
                 stderrBuffer += output
                 console.error('[yt-dlp stderr]', output)
-                const lines = stderrBuffer.split(/\r?\n/)
+                const lines = stderrBuffer.split(/\r\n|\n|\r/)
                 stderrBuffer = lines.pop() ?? ''
                 handleOutput(lines.join('\n'))
             }
