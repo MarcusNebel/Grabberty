@@ -9,6 +9,7 @@ import {
   fetchVideoMetadata,
   downloadMediaFile,
 } from "../utils/download"
+import type { DownloadStatus } from "../utils/api"
 import DownloadForm from "./DownloadForm"
 import VideoPreview from "./VideoPreview"
 import {
@@ -33,6 +34,7 @@ function DownloadBar() {
   const [selectedAudio, setSelectedAudio] = useState("")
   const [savedYoutubeId, setSavedYoutubeId] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
+  const [downloadStatus, setDownloadStatus] = useState<DownloadStatus | null>(null)
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => setIsMounted(true))
@@ -51,6 +53,7 @@ function DownloadBar() {
     setErrorMessage("")
     setIsExpanded(true)
     setIsLoading(true)
+    setDownloadStatus(null)
     setVideoInfo(null)
 
     try {
@@ -89,12 +92,28 @@ function DownloadBar() {
 
     setErrorMessage("")
     setIsLoading(true)
+    setDownloadStatus({
+      status: "starting",
+      progress: 0,
+      message: "Download wird gestartet",
+    })
 
     try {
-      await downloadMediaFile(savedYoutubeId, selectedQuality, selectedAudio)
+      await downloadMediaFile(
+        savedYoutubeId,
+        selectedQuality,
+        selectedAudio,
+        setDownloadStatus,
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : "Download failed"
       setErrorMessage(message)
+      setDownloadStatus((currentStatus) => currentStatus ? {
+        ...currentStatus,
+        status: "failed",
+        message,
+        error: message,
+      } : null)
     } finally {
       setIsLoading(false)
     }
@@ -144,6 +163,20 @@ function DownloadBar() {
               {errorMessage ? (
                 <div className="mb-4 rounded-[14px] border border-[#E53925] bg-[#E53925]/10 px-4 py-3 text-sm text-[#FFFFFF]">
                   {errorMessage}
+                </div>
+              ) : null}
+              {downloadStatus && isLoading ? (
+                <div className="mb-4 rounded-[14px] border border-[#555559] bg-[#242427] px-4 py-3 text-sm text-[#FFFFFF]">
+                  <div className="mb-2 flex items-center justify-between gap-4">
+                    <span>{downloadStatus.message}</span>
+                    <span className="text-[#8E8E93]">{downloadStatus.progress}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-[#555559]">
+                    <div
+                      className="h-full rounded-full bg-[#E53925] transition-[width] duration-300"
+                      style={{ width: `${Math.min(100, Math.max(0, downloadStatus.progress))}%` }}
+                    />
+                  </div>
                 </div>
               ) : null}
               <VideoPreview
