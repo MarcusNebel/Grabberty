@@ -53,7 +53,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', `${videoId}+${audioId}`, 
                 '--merge-output-format', 'mp4', 
                 ...baseArgs,
-                youtubeId, 
+                `https://www.youtube.com/watch?v=${youtubeId}`, 
                 '-o', path.join(tmpDir, filenameTemplate)
             ]
         } else if (videoId !== "0" && audioId === "0") {
@@ -64,7 +64,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-f', videoId, 
                 '--merge-output-format', 'mp4', 
                 ...baseArgs,
-                youtubeId, 
+                `https://www.youtube.com/watch?v=${youtubeId}`, 
                 '-o', path.join(tmpDir, filenameTemplate)
             ]
         } else if (videoId === "0" && audioId !== "0") {
@@ -76,7 +76,7 @@ export function downloadMedia(videoId: string, audioId: string, youtubeId: strin
                 '-x', 
                 '--audio-format', 'mp3', 
                 ...baseArgs,
-                youtubeId, 
+                `https://www.youtube.com/watch?v=${youtubeId}`, 
                 '-o', path.join(tmpDir, filenameTemplate)
             ]
         } else {
