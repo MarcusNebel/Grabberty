@@ -112,21 +112,12 @@ export function downloadMedia(
         
         let stderrOutput = ''
         let stdoutOutput = ''
+        let stdoutBuffer = ''
+        let stderrBuffer = ''
 
-        // Fehler-Output erfassen
-        yt.stderr?.on('data', (data) => {
-            stderrOutput += data.toString()
-            console.error('[yt-dlp stderr]', data.toString())
-        })
-        
-        // Standard-Output erfassen
-        yt.stdout?.on('data', (data) => {
-            const output = data.toString()
-            stdoutOutput += output
-            console.log('[yt-dlp stdout]', output)
-
+        const handleOutput = (output: string): void => {
             for (const line of output.split(/\r?\n/)) {
-                const progressMatch = line.match(/^download:\s*([\d.]+)%\|(\w+)/)
+                const progressMatch = line.match(/download:\s*([\d.]+)%\|(\w+)/)
                 if (progressMatch?.[1] && progressMatch[2]) {
                     onProgress?.({
                         status: 'downloading',
@@ -143,6 +134,38 @@ export function downloadMedia(
                     })
                 }
             }
+        }
+
+        const handleChunk = (
+            data: Buffer,
+            stream: 'stdout' | 'stderr'
+        ): void => {
+            const output = data.toString()
+            if (stream === 'stdout') {
+                stdoutOutput += output
+                stdoutBuffer += output
+                console.log('[yt-dlp stdout]', output)
+                const lines = stdoutBuffer.split(/\r?\n/)
+                stdoutBuffer = lines.pop() ?? ''
+                handleOutput(lines.join('\n'))
+            } else {
+                stderrOutput += output
+                stderrBuffer += output
+                console.error('[yt-dlp stderr]', output)
+                const lines = stderrBuffer.split(/\r?\n/)
+                stderrBuffer = lines.pop() ?? ''
+                handleOutput(lines.join('\n'))
+            }
+        }
+
+        // Fehler-Output erfassen
+        yt.stderr?.on('data', (data) => {
+            handleChunk(data, 'stderr')
+        })
+        
+        // Standard-Output erfassen
+        yt.stdout?.on('data', (data) => {
+            handleChunk(data, 'stdout')
         })
 
         // Fehler abfangen, falls z.B. yt-dlp nicht gefunden wird
@@ -152,6 +175,9 @@ export function downloadMedia(
 
         // 3. Warten, bis der Download komplett abgeschlossen ist
         yt.on('close', (code) => {
+            handleOutput(stdoutBuffer)
+            handleOutput(stderrBuffer)
+
             if (code !== 0) {
                 const errorMsg = stderrOutput || stdoutOutput || 'No error message from yt-dlp'
                 return reject(new Error(`yt-dlp exited with code ${code}: ${errorMsg}`))
