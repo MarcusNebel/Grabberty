@@ -1,17 +1,7 @@
 import type { BackendMetadata } from "./types"
 
 export const getBackendUrl = () => {
-  const hostname = window.location.hostname
-  const port = window.location.port
-  
-  // Prüfe ob es eine IP-Adresse ist (IPv4)
-  const isIP = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)
-  
-  if (isIP) {
-    return `http://${hostname}:${port}`
-  } else {
-    return `http://${hostname}`
-  }
+  return window.location.origin
 }
 
 export const fetchVideoMetadata = async (youtubeId: string): Promise<BackendMetadata> => {
